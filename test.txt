@@ -1,0 +1,11 @@
+var n, f;
+begin
+     k := 0;
+     f := 1;
+     while n # 10 do
+     begin
+          n := n + 1;
+          f := k * n;
+     end;
+     call print;
+end.
