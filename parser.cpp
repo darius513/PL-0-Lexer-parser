@@ -35,8 +35,8 @@ int expression(int* TX,int lev);
 int statement(int* TX,int lev);
 int vardeclaration(int* TX,int lev,int* DX);
 int constdeclaration(int* TX,int lev,int* DX);
-int position(char* idt,int tx);
-void enter(enum object KIND,int* TX,int lev,int* DX);
+int searchTable(char* idt,int tx);
+void addTable(enum object KIND,int* TX,int lev,int* DX);
 void error(int errorNum);
 ///////////////////////////////////////
 #define BEGINSYM 1
@@ -50,12 +50,15 @@ void error(int errorNum);
 #define CALLSYM 9
 #define PROCEDURESYM 10
 #define ODDSYM 11
-#define ADDSYM 12
-#define SUBSYM 13
-#define MULTISYM 14
-#define DIVSYM 15
-#define READSYM 16
-#define WRITESYM 17
+#define READSYM 12
+#define WRITESYM 13
+
+
+#define ADDSYM 14
+#define SUBSYM 15
+#define MULTISYM 16
+#define DIVSYM 17
+
 
 #define EQ 18
 
@@ -298,7 +301,7 @@ void getSym(){
 
 void getCode(){
     FILE *file;
-    const char *codePath = "D:\\Users\\DariusYoung\\Documents\\GitHub\\PL-0-Lexer-parser\\test.txt";
+    const char *codePath = "D:\\Users\\DariusYoung\\Documents\\GitHub\\PL-0-Lexer-parser\\test3.txt";
     file = fopen(codePath, "r");
     fseek(file, 0, SEEK_END);
     int file_size;
@@ -314,12 +317,12 @@ void error(int errorNum){
         case 1: printf("Line %d error: 嵌套层数超过上限3\n", Line); break;
         case 2: printf("Line %d error: 缺少；\n", Line); break;
         case 3: printf("Line %d error: const后未定义变量名\n", Line); break;
-        case 4: printf("Line %d error: 变量定义错误\n", Line); break;
+        case 4: printf("Line %d error: 常量定义应使用'='\n", Line); break;
         case 5: printf("Line %d error: CONSTANT should be a number\n", Line); break;
         case 6: printf("Line %d error: 缺少过程名\n", Line); break;
         case 7: printf("Line %d error: var后未定义变量名\n", Line); break;
         case 8: printf("Line %d error: 变量未定义\n", Line); break;
-        case 9: printf("Line %d error: constant值不允许更改\n", Line); break;
+        case 9: printf("Line %d error: constant值不允许更改\n", Line); break; //
         case 10: printf("Line %d error: 变量赋值缺少:=符号\n", Line); break;
         case 11: printf("Line %d error: 过程名未定义\n", Line); break;
         case 12: printf("Line %d error: call后应接过程名\n", Line); break;
@@ -336,7 +339,7 @@ void error(int errorNum){
     sumOfError++;
 }
 
-void enter(enum object KIND,int* TX,int lev,int* DX){
+void addTable(enum object KIND,int* TX,int lev,int* DX){
     strcpy(table[* TX].name, token);
     table[*TX].kind = KIND;
     switch (KIND){
@@ -355,7 +358,7 @@ void enter(enum object KIND,int* TX,int lev,int* DX){
     (* TX)++;
 }
 
-int position(char* idt,int tx){
+int searchTable(char* idt,int tx){
     int i;
     i=tx;
     while(i>=0){
@@ -374,9 +377,12 @@ int constdeclaration(int *TX, int lev, int *DX){
     if(sym != IDENT){
         error(3);   //const后未定义变量名
     }
-    getSym();
+    else{
+        addTable(CONSTANT, TX, lev, DX);
+        getSym();
+    }
     if(sym != EQ){
-        error(4); //变量定义错误
+        error(4); //常量定义错误
     }
     getSym();
     if(sym!=NUMBER){
@@ -384,7 +390,7 @@ int constdeclaration(int *TX, int lev, int *DX){
         getSym();
         return 0;
     }
-    enter(CONSTANT, TX, lev, DX);
+
     getSym();
     return 0;
 }
@@ -392,10 +398,10 @@ int constdeclaration(int *TX, int lev, int *DX){
 int vardeclaration(int* TX,int lev,int* DX){
     if(sym!=IDENT){
         error(7);   //var后未定义变量名
-        getSym();
+
         return 0;
     }
-    enter(VARIABLE, TX, lev, DX);
+    addTable(VARIABLE, TX, lev, DX);
     getSym();
     return 0;
 }
@@ -404,8 +410,8 @@ int statement(int* TX,int lev){
     int Posi;
     switch (sym){
         case IDENT:
-            if(position(token,*TX) != -1){
-                Posi = position(token,*TX);
+            if(searchTable(token,*TX) != -1){
+                Posi = searchTable(token,*TX);
                 if(table[Posi].kind==CONSTANT){
                     error(9);   //constant值不允许更改
                 }
@@ -417,13 +423,15 @@ int statement(int* TX,int lev){
             if(sym!=ASGN){
                 error(10);  //变量赋值缺少:=符号
             }
-            getSym();
+            else{
+                getSym();
+            }
             expression(TX, lev);
             break;
         case CALLSYM:
             getSym();
             if(sym==IDENT){
-                Posi=position(token,*TX);
+                Posi=searchTable(token,*TX);
                 if(Posi != -1){
                     if(table[Posi].kind!=PROCEDUR){
                         error(12);  //call后应接过程名
@@ -443,9 +451,13 @@ int statement(int* TX,int lev){
             while(sym!=ENDSYM){
                 statement(TX,lev);
                 if(sym!=SEMICOLON){
-                    error(13);
+                    Line--;
+                    error(2); //缺少；
+                    Line++;
                 }
-                getSym();
+                else if(sym==SEMICOLON){
+                    getSym();
+                }
             }
             getSym();
 //            statement(TX,lev);
@@ -464,18 +476,26 @@ int statement(int* TX,int lev){
             getSym();
             condition(TX,lev);
             if(sym!=THENSYM){
+                Line--;
                 error(14);  //缺少then
+                Line++;
             }
-//            getSym();
+            else{
+                getSym();
+            }
             statement(TX,lev);
             break;
         case WHILESYM:
             getSym();
             condition(TX,lev);
             if(sym!=DOSYM){
+                Line--;
                 error(15); //缺少do
+                Line++;
             }
-            getSym();
+            else{
+                getSym();
+            }
             statement(TX,lev);
             break;
         case READSYM:
@@ -486,7 +506,7 @@ int statement(int* TX,int lev){
             do{
                 getSym();
                 if(sym==IDENT){
-                    Posi=position(token, *TX);
+                    Posi=searchTable(token, *TX);
                     if(Posi == -1 ){
                         error(8);   //变量未定义
                     }
@@ -497,7 +517,9 @@ int statement(int* TX,int lev){
             if(sym!=RPAREN){
                 error(17);  //缺少)
             }
-            getSym();
+            else{
+                getSym();
+            }
             break;
         case WRITESYM:
             getSym();
@@ -520,7 +542,6 @@ int statement(int* TX,int lev){
 }
 
 int expression(int* TX,int lev){
-    bool nxtlev[32];
     if(sym==ADDSYM || sym==SUBSYM){
         getSym();
         term(TX,lev);
@@ -545,7 +566,7 @@ int term(int* TX,int lev){
 
 int factor(int* TX,int lev){
     if(sym==IDENT){
-        int Posi=position(token, *TX);
+        int Posi=searchTable(token, *TX);
         if(Posi != -1){
             if(table[Posi].kind == PROCEDUR){
                 error(19);  //因子不能为过程
@@ -632,11 +653,11 @@ int block(int lev, int tx){
     while(sym == PROCEDURESYM) {
         getSym();
         if (sym == IDENT) {
-            enter(PROCEDUR, &tx, lev, &dx);
+            addTable(PROCEDUR, &tx, lev, &dx);
+            getSym();
         } else {
             error(6);  //缺少过程名
         }
-        getSym();
         if (sym == SEMICOLON) {
             getSym();
         } else error(2);    //缺少;
@@ -663,7 +684,6 @@ int block(int lev, int tx){
 int main(){
     Sleep(3000);
     getCode();
-    bool nxtlev[32];
     getSym();
     block(0, 0);
     cout<<"共 "<<sumOfError<<" 处错误"<<endl;

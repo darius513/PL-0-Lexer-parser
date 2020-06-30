@@ -1,11 +1,24 @@
+const := n;
 var n, f;
+procedure ;
+    var m;
+    begin
+        m 1;
+    end;
+procedure l;
+    var ;
+    begin
+    end;
 begin
      k := 0;
-     f := 1;
-     while n # 10 do
+     f := 1
+     while n # 10
      begin
           n := n + 1;
-          f := k * n;
+          f := 1 * n;
      end;
+     if f > 10
+        n := l + 1;
      call print;
+     read (n ;
 end.

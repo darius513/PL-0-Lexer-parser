@@ -1,0 +1,21 @@
+var n, f;
+procedure p;
+    var i;
+    procedure q;
+        var k;
+        procedure m;
+            var n;
+            procedure w;
+                var j;
+                begin
+                end;
+            begin
+            end;
+        begin
+        end;
+    begin
+    end;
+begin
+     n := 0;
+     f := 1;
+end.

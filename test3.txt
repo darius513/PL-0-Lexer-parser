@@ -1,0 +1,4 @@
+const m = 10;
+begin
+     m := 11;
+end.
